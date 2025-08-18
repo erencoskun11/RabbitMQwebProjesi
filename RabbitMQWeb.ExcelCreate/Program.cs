@@ -1,8 +1,12 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQWeb.ExcelCreate.Models;
 using RabbitMQWeb.ExcelCreate.Services;
+using System.Security.Authentication;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,22 +28,54 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options =>
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 builder.Services.AddDatabaseDeveloperPageExceptionFilter(); // Dev exception page for EF
-builder.Services.AddSingleton<RabbitMQPublisher>();
-// --- RabbitMQ ---
-var rabbitMqSection = builder.Configuration.GetSection("RabbitMq");
-builder.Services.AddSingleton(sp => new ConnectionFactory
+
+// --- RabbitMQ Settings ---
+builder.Services.Configure<RabbitMQSettings>(builder.Configuration.GetSection("RabbitMq"));
+
+// --- RabbitMQ ConnectionFactory & Services ---
+builder.Services.AddSingleton(sp =>
 {
-    HostName = rabbitMqSection["HostName"] ?? "localhost",
-    Port = int.Parse(rabbitMqSection["Port"] ?? "5672"),
-    UserName = rabbitMqSection["UserName"] ?? "guest",
-    Password = rabbitMqSection["Password"] ?? "guest",
-    DispatchConsumersAsync = true
+    var options = sp.GetRequiredService<IOptions<RabbitMQSettings>>().Value;
+
+    // Eðer amqps URI kullanmak istersen config'e "Url" ekleyebilirsin; burada ayrý alanlarý kullanýyoruz.
+    var factory = new ConnectionFactory
+    {
+        HostName = options.HostName,
+        Port = options.Port,
+        UserName = options.UserName,
+        Password = options.Password,
+        VirtualHost = options.VirtualHost,
+        DispatchConsumersAsync = true,
+        AutomaticRecoveryEnabled = true
+    };
+
+    if (options.SslEnabled)
+    {
+        factory.Ssl = new SslOption
+        {
+            Enabled = true,
+            ServerName = options.HostName, // sertifika CN/SAN ile eþleþmeli
+            Version = SslProtocols.Tls12,
+            // Geliþtirme sýrasýnda sertifika doðrulamasýný atlamak istersen config'ten kontrol et
+            CertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+            {
+                if (options.AllowInvalidCertificates)
+                    return true; // Sadece dev/test için
+                // Normalde sadece SSL policy errors yoksa true dön
+                return sslPolicyErrors == SslPolicyErrors.None;
+            }
+        };
+    }
+
+    return factory;
 });
+
 builder.Services.AddSingleton<RabbitMQClientService>();
+builder.Services.AddSingleton<RabbitMQPublisher>();
 
 var app = builder.Build();
 
-
+// --- Middleware ---
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -62,6 +98,7 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 app.MapRazorPages();
 
+// --- Seed Admin User ---
 using (var scope = app.Services.CreateScope())
 {
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
