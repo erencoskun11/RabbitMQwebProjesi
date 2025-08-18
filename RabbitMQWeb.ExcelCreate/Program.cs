@@ -24,7 +24,7 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options =>
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 builder.Services.AddDatabaseDeveloperPageExceptionFilter(); // Dev exception page for EF
-
+builder.Services.AddSingleton<RabbitMQPublisher>();
 // --- RabbitMQ ---
 var rabbitMqSection = builder.Configuration.GetSection("RabbitMq");
 builder.Services.AddSingleton(sp => new ConnectionFactory

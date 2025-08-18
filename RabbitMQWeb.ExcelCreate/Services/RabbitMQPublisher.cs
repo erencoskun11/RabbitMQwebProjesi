@@ -15,11 +15,11 @@ namespace RabbitMQWeb.ExcelCreate.Services
             _rabbitmqClientService = rabbitMQClientService;
         }
 
-        public void Publish(CreateExcelMessage productImageCreatedEvent)
+        public void Publish(CreateExcelMessage createExcelMessage)
         {
             var channel = _rabbitmqClientService.Connect();
 
-            var bodyString = JsonSerializer.Serialize(productImageCreatedEvent);
+            var bodyString = JsonSerializer.Serialize(createExcelMessage);
 
             var bodyByte = Encoding.UTF8.GetBytes(bodyString);
 
