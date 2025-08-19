@@ -6,6 +6,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using RabbitMQ.Client;
 using FileCreateWorkerService;
+using Microsoft.Extensions.Options;
+using FileCreateWorkerService.Models;
+using Microsoft.EntityFrameworkCore;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -19,6 +22,13 @@ if (string.IsNullOrWhiteSpace(amqpUri))
     throw new InvalidOperationException(
         "RabbitMQ connection string not found. Set ConnectionStrings:RabbitMQ or RabbitMq:Url in configuration.");
 }
+
+builder.Services.AddDbContext<AdventureWorks2019Context>(options =>
+{
+    options.UseSqlServer(config.GetConnectionString("SqlServer"));
+});
+
+
 
 // Register ConnectionFactory as singleton
 builder.Services.AddSingleton(sp =>
