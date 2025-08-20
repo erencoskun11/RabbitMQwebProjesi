@@ -31,8 +31,6 @@ namespace RabbitMQWeb.ExcelCreate.Controllers
             return View();
         }
 
-
-
         public async Task<IActionResult> CreateProductExcel()
         {
             var user = await _userManager.FindByNameAsync(User.Identity.Name);
@@ -44,10 +42,8 @@ namespace RabbitMQWeb.ExcelCreate.Controllers
                 UserId = user.Id,
                 FileName = fileName,
                 FileStatus = FileStatus.Creating
-
             };
             await _context.userFiles.AddAsync(userfile);
-
             await _context.SaveChangesAsync();
 
             _rabbitMQPublisher.Publish(new CreateExcelMessage() 

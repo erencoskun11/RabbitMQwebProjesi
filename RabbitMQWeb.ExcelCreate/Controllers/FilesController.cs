@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RabbitMQWeb.ExcelCreate.Models;
-using System.ComponentModel.DataAnnotations;
 
 namespace RabbitMQWeb.ExcelCreate.Controllers
 {
@@ -16,18 +15,32 @@ namespace RabbitMQWeb.ExcelCreate.Controllers
         {
             _context = context;
         }
-        public async Task<IActionResult> Upload(IFormFile file,int fileId)
+
+        [HttpPost] 
+        public async Task<IActionResult> Upload([FromForm] IFormFile file, [FromQuery] int fileId)
         {
-            if (file is not { Length: > 0 }) return BadRequest();
+            if (file is not { Length: > 0 })
+                return BadRequest("Dosya boş ya da bulunamadı.");
 
-            var userFile = await _context.userFiles.FirstAsync(x=>x.Id==fileId);
+            var userFile = await _context.userFiles.FirstOrDefaultAsync(x => x.Id == fileId);
+            if (userFile is null)
+                return NotFound($"Id'si {fileId} olan kayıt bulunamadı.");
 
-             var filePath = userFile.FileName + Path.GetExtension(file.FileName);
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "UploadedFiles");
+            Directory.CreateDirectory(uploadsFolder);
 
+            var filePath = Path.Combine(uploadsFolder, userFile.FileName + Path.GetExtension(file.FileName));
 
+            await using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
 
+            // Kaydı güncellemek istersen:
+            // userFile.FilePath = filePath;
+            // await _context.SaveChangesAsync();
 
+            return Ok(new { message = "Dosya başarıyla yüklendi.", path = filePath });
         }
-
     }
 }
