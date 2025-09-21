@@ -72,7 +72,7 @@ builder.Services.AddSingleton(sp =>
 
 builder.Services.AddSingleton<RabbitMQClientService>();
 builder.Services.AddSingleton<RabbitMQPublisher>();
-
+builder.Services.AddSignalR();
 var app = builder.Build();
 
 // --- Middleware ---

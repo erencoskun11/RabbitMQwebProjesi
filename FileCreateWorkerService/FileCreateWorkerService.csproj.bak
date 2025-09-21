@@ -8,11 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-<<<<<<< HEAD
 <<<<<<< Updated upstream
 =======
-=======
->>>>>>> origin/main
     <PackageReference Include="ClosedXML" Version="0.105.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.19" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.19">
@@ -20,10 +17,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.19" />
-<<<<<<< HEAD
 >>>>>>> Stashed changes
-=======
->>>>>>> origin/main
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
     <PackageReference Include="RabbitMQ.Client" Version="6.8.1" />
   </ItemGroup>
