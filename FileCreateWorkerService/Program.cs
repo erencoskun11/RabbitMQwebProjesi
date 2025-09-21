@@ -1,4 +1,3 @@
-// Program.cs
 using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
@@ -9,6 +8,8 @@ using FileCreateWorkerService;
 using Microsoft.Extensions.Options;
 using FileCreateWorkerService.Models;
 using Microsoft.EntityFrameworkCore;
+using FileCreateWorkerService.Services;
+using Microsoft.Extensions.Logging;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -23,12 +24,11 @@ if (string.IsNullOrWhiteSpace(amqpUri))
         "RabbitMQ connection string not found. Set ConnectionStrings:RabbitMQ or RabbitMq:Url in configuration.");
 }
 
+// Add DbContext (scoped by default)
 builder.Services.AddDbContext<AdventureWorks2019Context>(options =>
 {
     options.UseSqlServer(config.GetConnectionString("SqlServer"));
 });
-
-
 
 // Register ConnectionFactory as singleton
 builder.Services.AddSingleton(sp =>
@@ -43,10 +43,18 @@ builder.Services.AddSingleton(sp =>
     return factory;
 });
 
-// Register your Worker as hosted service
+// Register RabbitMQClientService (singleton) — kullaným için gerekli baðýmlýlýklarý veriyoruz
+builder.Services.AddSingleton<RabbitMQClientService>(sp =>
+{
+    var factory = sp.GetRequiredService<ConnectionFactory>();
+    var logger = sp.GetRequiredService<ILogger<RabbitMQClientService>>();
+    return new RabbitMQClientService(factory, logger);
+});
+
+// Register your Worker as hosted service (HostedService'ler genelde singleton olur)
 builder.Services.AddHostedService<Worker>();
 
 var host = builder.Build();
 
-// Run the host (top-level await supported)
+// Run the host
 await host.RunAsync();
