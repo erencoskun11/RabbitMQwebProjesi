@@ -36,12 +36,19 @@ namespace FileCreateWorkerService
         }
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {
-           var consumer = new AsyncEventingBasicConsumer(_channel);
+            if (_channel == null)
+            {
+                _logger.LogError("RabbitMQ channel is null in ExecuteAsync. StartAsync may have failed.");
+                return Task.CompletedTask;
+            }
 
+            var consumer = new AsyncEventingBasicConsumer(_channel);
+            _channel.BasicConsume(RabbitMQClientService.QueueName, false, consumer);
             consumer.Received += Consumer_Received;
 
             return Task.CompletedTask;
         }
+
 
         private async Task Consumer_Received(object sender, BasicDeliverEventArgs @event)
         {
